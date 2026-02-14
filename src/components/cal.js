@@ -1,60 +1,52 @@
-import React, { useState } from "react";
 import "./cal.css";
 import { evaluate } from "mathjs";
+import { useSelector, useDispatch } from 'react-redux';
+import { appendInput, setInput, setResult, setLast, clearAll } from '../features/calcSlice';
 
 function Cal() {
-  // add state here for access and data
-  const [input, setInput] = useState("");
-  const [result, setResult] = useState("");
-  const [lastOp, setLastOp] = useState("");
-  const [lastNum, setLastNum] = useState("");
+  const input = useSelector((state) => state.calc.input);
+  const result = useSelector((state) => state.calc.result);
+  const lastOp = useSelector((state) => state.calc.lastOp);
+  const lastNum = useSelector((state) => state.calc.lastNum);
+  const dispatch = useDispatch();
+ 
 
   const handleClick = (value) => {
     if (value === "=") {
       if (input !== "") {
-        // Normal evaluation
         try {
           const evalResult = evaluate(input);
-          setResult(evalResult);
-          // Find last operator and operand for repeat
+          dispatch(setResult(String(evalResult)));
           const match = input.match(/([+\-*/])\s*([\d.]+)\s*$/);
           if (match) {
-            setLastOp(match[1]);
-            setLastNum(match[2]);
+            dispatch(setLast({ op: match[1], num: match[2] }));
           } else {
-            setLastOp("");
-            setLastNum("");
+            dispatch(setLast({ op: '', num: '' }));
           }
-          setInput("");
+          dispatch(setInput(''));
         } catch (error) {
-          setResult("Math Error");
-          setInput("");
+          dispatch(setResult('Math Error'));
+          dispatch(setInput(''));
         }
       } else if (result !== "" && lastOp && lastNum) {
-        // Repeat last operation
+        let newExp = `${result}${lastOp}${lastNum}`;
         try {
-          const newExp = `${result}${lastOp}${lastNum}`;
           const evalResult = evaluate(newExp);
-          setResult(evalResult);
+           dispatch(setResult(String(evalResult)));
         } catch (error) {
-          setResult("Math Error");
+          dispatch(setResult('Math Error'));
         }
       }
     } else if (value === "Clear") {
-      setInput("");
-      setResult("");
-      setLastOp("");
-      setLastNum("");
+      dispatch(clearAll());
     } else {
-      // If result is showing and user clicks a number or dot, start new input
       if (result !== "" && /[0-9.]/.test(value)) {
-        setInput(value);
-        setResult("");
-        setLastOp("");
-        setLastNum("");
+        dispatch(setInput(value));
+        dispatch(setResult(''));
+        dispatch(setLast({ op: '', num: '' }));
       } else {
-        setInput((prev) => prev + value);
-        setResult("");
+        dispatch(appendInput(value));
+        dispatch(setResult(''));
       }
     }
   };
@@ -62,7 +54,7 @@ function Cal() {
   return (
     <>
       <h1 style={{ textAlign: "center", margin: "10px" }}>
-        Custom Calculator{" "}
+        Custom Calculator{' '}
       </h1>
       <div className="calculator card">
         <input
